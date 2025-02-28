@@ -2,19 +2,26 @@ const express = require("express");
 const { Pool } = require("pg");
 const cors = require("cors");
 const path = require("path");
-require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Подключение к базе данных Neon
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false
 });
 
+// Проверка подключения к БД
+pool.connect()
+    .then(() => console.log("✅ Успешное подключение к базе данных Neon"))
+    .catch(err => console.error("❌ Ошибка подключения к базе данных:", err));
+
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
+
+// Раздача статики
+app.use(express.static("public"));
 
 // Главная страница
 app.get("/", (req, res) => {
@@ -27,7 +34,7 @@ app.get("/marks", async (req, res) => {
         const result = await pool.query("SELECT * FROM marks");
         res.json(result.rows);
     } catch (err) {
-        console.error("Ошибка при получении данных: ", err);
+        console.error("❌ Ошибка получения маркеров:", err);
         res.status(500).send("Ошибка сервера");
     }
 });
@@ -42,11 +49,12 @@ app.post("/marks", async (req, res) => {
         );
         res.json(result.rows[0]);
     } catch (err) {
-        console.error("Ошибка при добавлении маркера: ", err);
+        console.error("❌ Ошибка добавления маркера:", err);
         res.status(500).send("Ошибка сервера");
     }
 });
 
+// Запуск сервера
 app.listen(PORT, () => {
-    console.log(`🚀 Server is running on port ${PORT}`);
+    console.log(`🚀 Сервер запущен на http://localhost:${PORT}`);
 });
